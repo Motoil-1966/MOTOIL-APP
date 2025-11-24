@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MOTOIL">
+    <meta name="description" content="Controllo Pompa ESP32 via Bluetooth - Standalone">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1PVE9JTCIsCiAgInNob3J0X25hbWUiOiAiTU9UT0lMIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjRkZENzAwIiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDUxMiA1MTInJTNFJTNDcmVjdCB3aWR0aD0nNTEyJyBoZWlnaHQ9JzUxMicgZmlsbD0nJTIzRkZENzAwJy8lM0UlM0N0ZXh0IHg9JzUwJTI1JyB5PSc1MCUyNScgZm9udC1zaXplPScyNTAnIGZvbnQtd2VpZ2h0PSdib2xkJyBmaWxsPSclMjMwMDAnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGR5PScuMzVlbScgZm9udC1mYW1pbHk9J0FyaWFsLHNhbnMtc2VyaWYnJTNFTSUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgIH0KICBdCn0=">
+    <title>MOTOIL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 25px;
+            border-radius: 20px;
+            border: 3px solid #FFD700;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .header-logo {
+            width: 120px;
+            height: 120px;
+            background: #FFD700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+            font-weight: 900;
+            color: #000;
+            border: 5px solid #000;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin: 15px 0 0 0;
+            text-shadow: 0 4px 15px rgba(255, 215, 0, 0.8);
+            font-weight: 900;
+            letter-spacing: 8px;
+            color: #FFD700;
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            color: #FFD700;
+            margin: 10px 0 0 0;
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(15px);
+            border: 3px solid #FFD700;
+        }
+
+        .status {
+            text-align: center;
+            padding: 22px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 1.6em;
+            border: 2px solid #FFD700;
+        }
+
+        .status.connected {
+            background: rgba(0, 100, 0, 0.8);
+            color: #00FF00;
+            border: 2px solid #00FF00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+        }
+
+        .status.disconnected {
+            background: rgba(100, 0, 0, 0.8);
+            color: #FF6B6B;
+            border: 2px solid #FF6B6B;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.7);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 25px 10px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.7em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #0f9b0f 0%, #38ef7d 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #c33764 0%, #f45c43 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: stretch;
+        }
+
+        .section-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #FFD700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 2px 8px rgba(255, 215, 0, 0.6);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #FFD700;
+            font-size: 1.5em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            font-size: 1.6em;
+            transition: all 0.3s;
+            background: rgba(0, 0, 0, 0.7);
+            color: #FFD700;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #FFA500;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 215, 0, 0.5);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .device-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .device-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #FFD700;
+        }
+
+        .device-item:hover {
+            background: rgba(0, 0, 0, 0.95);
+            border-color: #FFA500;
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .device-name {
+            font-weight: bold;
+            font-size: 1.4em;
+            margin-bottom: 5px;
+            color: #FFD700;
+        }
+
+        .device-id {
+            font-size: 1.1em;
+            color: rgba(255, 215, 0, 0.7);
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            font-size: 1.4em;
+        }
+
+        .alert-info {
+            background: rgba(0, 0, 0, 0.85);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            border-left: 4px solid #FFD700;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-top: 3px solid #FFD700;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.9;
+            font-size: 1.2em;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-logo">M</div>
+            </div>
+            <h1>MOTOIL</h1>
+            <p>ESP32 Xiao C3 via Bluetooth</p>
+        </div>
+
+        <!-- Schermata iniziale -->
+        <div id="connectScreen">
+            <div class="card">
+                <div class="alert alert-info">
+                    ℹ️ Assicurati che il Bluetooth sia attivo e che l'ESP32 sia acceso
+                </div>
+                <button class="btn btn-primary" onclick="scanDevices()">
+                    🔍 Cerca Dispositivi
+                </button>
+                
+                <div id="deviceList" class="device-list"></div>
+                <div id="scanning" class="hidden">
+                    <div class="spinner"></div>
+                    <p style="text-align: center; color: #FFD700; font-size: 1.2em;">Ricerca in corso...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schermata controlli -->
+        <div id="controlScreen" class="hidden">
+            <div class="card">
+                <div id="statusDisplay" class="status disconnected">
+                    📡 Disconnesso
+                </div>
+
+                <div class="section-title">
+                    🎮 Controllo Manuale
+                </div>
+                
+                <div class="btn-row">
+                    <button class="btn btn-success" onclick="sendCommand('ON')">
+                        ✅ ACCENDI
+                    </button>
+                    <button class="btn btn-danger" onclick="sendCommand('OFF')">
+                        ❌ SPEGNI
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    ⚙️ Configurazione Automatica
+                </div>
+
+                <div class="input-group">
+                    <label for="periodo">⏱️ Periodo (secondi): 1-1200</label>
+                    <input type="number" id="periodo" value="5" min="1" max="1200">
+                </div>
+
+                <div class="input-group">
+                    <label for="durata">⏰ Durata accensione (secondi): 1-periodo</label>
+                    <input type="number" id="durata" value="1" min="1" max="1200">
+                </div>
+
+                <button class="btn btn-warning" onclick="configura()">
+                    💾 APPLICA CONFIGURAZIONE
+                </button>
+            </div>
+
+            <div class="card">
+                <button class="btn btn-secondary" onclick="disconnect()">
+                    🔌 DISCONNETTI
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            Made with ❤️ for ESP32 | Standalone App 📱
+        </div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = '12345678-1234-1234-1234-1234567890ab';
+        const CHARACTERISTIC_UUID = 'abcd1234-1234-1234-1234-abcdefabcdef';
+        
+        let device = null;
+        let characteristic = null;
+
+        // Registra Service Worker per PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'motoil-v1';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (e) => {
+                        self.clients.claim();
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then((response) => {
+                                return response || fetch(e.request);
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl).then(() => {
+                    console.log('PWA: Service Worker registrato');
+                }).catch((err) => {
+                    console.log('PWA: Service Worker non registrato', err);
+                });
+            });
+        }
+
+        // Verifica supporto Web Bluetooth
+        if (!navigator.bluetooth) {
+            alert('❌ Il tuo browser non supporta Web Bluetooth.\n\nUsa Chrome su Android o Bluefy su iOS!');
+        }
+
+        async function scanDevices() {
+            try {
+                console.log('Inizio scansione...');
+                document.getElementById('scanning').classList.remove('hidden');
+                document.getElementById('deviceList').innerHTML = '';
+
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { namePrefix: 'Pompa' }
+                    ],
+                    optionalServices: [SERVICE_UUID, 'generic_access', 'device_information']
+                });
+
+                console.log('Dispositivo trovato:', device.name);
+                console.log('ID dispositivo:', device.id);
+                
+                await connectToDevice();
+
+            } catch (error) {
+                console.error('Errore scansione:', error);
+                console.error('Dettagli errore:', error.message, error.name);
+                alert('❌ Errore durante la ricerca dispositivi.\n\n' + error.message);
+            } finally {
+                document.getElementById('scanning').classList.add('hidden');
+            }
+        }
+
+        async function connectToDevice() {
+            try {
+                console.log('Tentativo connessione...');
+                updateStatus('Connessione in corso...', false);
+
+                if (!device || !device.gatt) {
+                    throw new Error('Dispositivo non valido');
+                }
+
+                const server = await device.gatt.connect();
+                console.log('✅ Server GATT connesso');
+                
+                console.log('Cerco servizio:', SERVICE_UUID);
+                
+                try {
+                    const service = await server.getPrimaryService(SERVICE_UUID);
+                    console.log('✅ Servizio trovato:', service.uuid);
+                    
+                    console.log('Cerco caratteristica:', CHARACTERISTIC_UUID);
+                    characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+                    console.log('✅ Caratteristica trovata:', characteristic.uuid);
+                } catch (serviceError) {
+                    console.error('❌ Errore accesso servizio/caratteristica:', serviceError);
+                    
+                    try {
+                        console.log('Elenco servizi disponibili:');
+                        const services = await server.getPrimaryServices();
+                        for (const svc of services) {
+                            console.log('- Servizio trovato:', svc.uuid);
+                        }
+                    } catch (e) {
+                        console.error('Impossibile elencare servizi:', e);
+                    }
+                    
+                    throw new Error('Servizio BLE non trovato. UUID corretto? Verifica lo sketch ESP32.');
+                }
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                updateStatus(`✅ Connesso a ${device.name}`, true);
+                console.log('✅ Connessione completata con successo!');
+                showControlScreen();
+
+            } catch (error) {
+                console.error('❌ Errore connessione:', error);
+                console.error('Nome errore:', error.name);
+                console.error('Messaggio:', error.message);
+                
+                let errorMsg = '❌ Impossibile connettersi al dispositivo.\n\n';
+                
+                if (error.message) {
+                    errorMsg += error.message;
+                } else {
+                    errorMsg += 'Errore sconosciuto. Verifica che:\n';
+                    errorMsg += '1. L\'ESP32 sia acceso\n';
+                    errorMsg += '2. Lo sketch sia caricato correttamente\n';
+                    errorMsg += '3. Gli UUID nel codice corrispondano allo sketch';
+                }
+                
+                alert(errorMsg);
+                updateStatus('❌ Errore di connessione', false);
+            }
+        }
+
+        function onDisconnected() {
+            updateStatus('📡 Disconnesso', false);
+            showConnectScreen();
+            alert('⚠️ Dispositivo disconnesso');
+        }
+
+        async function sendCommand(command) {
+            if (!characteristic) {
+                alert('❌ Nessun dispositivo connesso');
+                return;
+            }
+
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(command);
+                await characteristic.writeValue(data);
+                console.log('✅ Comando inviato:', command);
+                
+                if (command === 'ON') {
+                    showFeedback('✅ Pompa accesa!');
+                } else if (command === 'OFF') {
+                    showFeedback('❌ Pompa spenta!');
+                }
+            } catch (error) {
+                console.error('Errore invio comando:', error);
+                alert('❌ Errore nell\'invio del comando.\n\n' + error.message);
+            }
+        }
+
+        async function configura() {
+            const periodo = parseInt(document.getElementById('periodo').value);
+            const durata = parseInt(document.getElementById('durata').value);
+
+            if (isNaN(periodo) || isNaN(durata) || periodo < 1 || periodo > 1200) {
+                alert('❌ Periodo non valido!\n\nInserisci un valore tra 1 e 1200 secondi.');
+                return;
+            }
+
+            if (durata < 1 || durata > periodo) {
+                alert('❌ Durata non valida!\n\nLa durata deve essere tra 1 e ' + periodo + ' secondi.');
+                return;
+            }
+
+            const command = `CFG:${periodo}:${durata}`;
+            await sendCommand(command);
+            
+            showFeedback(`💾 Configurazione applicata!\nPeriodo: ${periodo}s | Durata: ${durata}s`);
+        }
+
+        async function disconnect() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+                showConnectScreen();
+                updateStatus('📡 Disconnesso', false);
+            }
+        }
+
+        function showControlScreen() {
+            document.getElementById('connectScreen').classList.add('hidden');
+            document.getElementById('controlScreen').classList.remove('hidden');
+        }
+
+        function showConnectScreen() {
+            document.getElementById('connectScreen').classList.remove('hidden');
+            document.getElementById('controlScreen').classList.add('hidden');
+        }
+
+        function updateStatus(message, connected) {
+            const statusEl = document.getElementById('statusDisplay');
+            statusEl.textContent = message;
+            statusEl.className = connected ? 'status connected' : 'status disconnected';
+        }
+
+        function showFeedback(message) {
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info';
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.zIndex = '1000';
+            notification.style.minWidth = '300px';
+            notification.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transition = 'opacity 0.5s';
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
